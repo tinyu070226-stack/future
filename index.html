@@ -7,10 +7,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #ffffff;
+            --bg: #f8fafc;
             --border: #e2e8f0;
             --text-main: #0f172a;
-            --text-muted: #475569;
+            --text-muted: #64748b;
+            --line-default: #cbd5e1; /* 常駐線條顏色 */
         }
         
         * { box-sizing: border-box; }
@@ -21,140 +22,93 @@
             color: var(--text-main);
             height: 100vh;
             display: flex;
-            flex-direction: row;
             overflow: hidden;
-            background-image: radial-gradient(#cbd5e1 1.5px, transparent 1.5px);
-            background-size: 28px 28px;
+            background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+            background-size: 30px 30px;
         }
 
-        /* 左側固定資訊列 */
+        /* 左側資訊列優化 */
         #sidebar {
-            width: 450px;
+            width: 420px;
             height: 100vh;
-            background: rgba(255, 255, 255, 0.98);
-            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(12px);
             border-right: 1px solid var(--border);
-            z-index: 20;
-            box-shadow: 4px 0 25px -5px rgba(0,0,0,0.05);
+            z-index: 50;
             display: flex;
             flex-direction: column;
-            flex-shrink: 0;
-            border-top: 8px solid transparent; 
-            transition: border-top-color 0.3s ease;
+            box-shadow: 10px 0 30px rgba(0,0,0,0.02);
+            transition: border-top 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border-top: 10px solid transparent;
         }
 
         .sidebar-inner {
-            padding: 3rem 2.5rem;
+            padding: 3.5rem 2.5rem;
             overflow-y: auto;
             flex: 1;
         }
 
-        .sidebar-inner::-webkit-scrollbar { width: 6px; }
-        .sidebar-inner::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        h1 { font-size: 2rem; font-weight: 900; margin: 0 0 1rem; letter-spacing: -1px; }
+        .subtitle { color: var(--text-muted); font-weight: 500; line-height: 1.6; margin-bottom: 2rem; }
 
-        h1 { margin: 0 0 1.5rem 0; font-size: 1.8rem; font-weight: 900; letter-spacing: -0.5px; line-height: 1.3;}
-        .subtitle { margin: 0; font-size: 1.05rem; color: var(--text-muted); font-weight: 700; line-height: 1.6; }
+        #detail-content { display: none; animation: fadeIn 0.5s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
 
-        .instruction {
-            margin-top: 2.5rem;
-            padding: 1.5rem;
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            font-size: 0.95rem;
-            color: var(--text-muted);
-            line-height: 1.7;
+        .panel-title { font-size: 1.5rem; font-weight: 900; margin-bottom: 1.5rem; line-height: 1.3; }
+        .panel-content { font-size: 1.05rem; line-height: 1.8; color: #334155; }
+        .panel-content p { margin-bottom: 1.25rem; text-align: justify; }
+
+        .back-btn { 
+            background: #f1f5f9; border: none; padding: 8px 16px; border-radius: 8px;
+            color: var(--text-muted); cursor: pointer; font-weight: 700; margin-bottom: 2rem;
+            transition: all 0.2s;
         }
+        .back-btn:hover { background: #e2e8f0; color: var(--text-main); }
 
-        /* 畫布區 */
-        #flow-wrapper {
-            flex: 1;
-            height: 100vh;
-            overflow: auto;
-            position: relative;
-            cursor: grab;
-        }
+        /* 右側畫布與線條 */
+        #flow-wrapper { flex: 1; height: 100vh; overflow: auto; cursor: grab; position: relative; }
         #flow-wrapper:active { cursor: grabbing; }
 
         .flow-columns {
-            display: flex;
-            flex-direction: row;
-            gap: 7rem;
-            padding: 6rem 8rem;
-            min-width: max-content;
-            position: relative; 
+            display: flex; gap: 8rem; padding: 8rem; min-width: max-content; position: relative; 
         }
 
-        .col { display: flex; flex-direction: column; gap: 4rem; z-index: 10; }
-        .row { display: flex; flex-direction: row; gap: 4.5rem; }
+        .col { display: flex; flex-direction: column; gap: 5rem; justify-content: center; }
+        .row { display: flex; gap: 4rem; }
 
         .node {
-            width: 260px;
-            background-color: var(--node-bg, #ffffff);
-            color: #0f172a;
-            border: 3px solid var(--node-color);
-            border-radius: 12px;
-            padding: 1.5rem;
-            font-size: 1.1rem;
-            font-weight: 700;
-            cursor: pointer;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-            line-height: 1.5;
+            width: 250px; padding: 1.5rem; border-radius: 16px;
+            background: #ffffff; border: 2px solid var(--node-color);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+            cursor: pointer; transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: relative; z-index: 10;
         }
-        
-        .node:hover { transform: translateY(-4px); background-color: #ffffff; }
-        .node.active {
-            transform: scale(1.05);
-            background-color: #ffffff;
-            box-shadow: 0 0 0 4px #ffffff, 0 0 0 8px var(--node-color);
+        .node:hover { transform: translateY(-5px); box-shadow: 0 12px 20px rgba(0,0,0,0.08); }
+        .node.active { 
+            transform: scale(1.08); background: #ffffff; 
+            box-shadow: 0 0 0 6px rgba(255,255,255,1), 0 0 0 10px var(--node-color);
             z-index: 20;
         }
 
-        .node-number {
-            font-size: 0.85rem;
-            color: var(--node-color);
-            margin-bottom: 0.5rem;
-            display: block;
-            font-weight: 900;
-        }
+        .node-num { font-size: 0.75rem; font-weight: 900; color: var(--node-color); opacity: 0.8; margin-bottom: 0.5rem; display: block; }
 
-        svg.connections {
-            position: absolute;
-            top: 0; left: 0;
-            pointer-events: none;
-            z-index: 0;
-        }
+        /* SVG 線條樣式 */
+        svg.connections { position: absolute; top: 0; left: 0; pointer-events: none; z-index: 0; }
+        path.line { fill: none; stroke: var(--line-default); stroke-width: 2px; transition: stroke 0.4s, stroke-width 0.4s; stroke-linecap: round; }
+        path.line.active { stroke-width: 4px; stroke-dasharray: none; } /* 點擊後變粗變色，但不閃爍 */
 
-        path.line { fill: none; stroke-width: 3px; transition: stroke 0.3s; }
-        path.line.active {
-            stroke-width: 4px;
-            stroke-dasharray: 12 8;
-            animation: flowDash 0.8s linear infinite;
-        }
-        @keyframes flowDash { to { stroke-dashoffset: -20; } }
-
-        #detail-content { display: none; }
-        .panel-title { font-size: 1.4rem; font-weight: 900; border-bottom: 1px solid var(--border); padding-bottom: 1rem; margin-bottom: 1.5rem; }
-        .panel-content { font-size: 1.05rem; line-height: 1.8; color: var(--text-muted); text-align: justify; }
-        .back-btn { background: none; border: none; color: var(--text-muted); cursor: pointer; font-weight: 700; margin-bottom: 2rem; }
     </style>
 </head>
 <body>
-    <svg width="0" height="0" style="position: absolute;">
-        <defs id="svg-defs"></defs>
-    </svg>
 
     <aside id="sidebar">
         <div class="sidebar-inner">
             <div id="intro-content">
-                <h1>未來推演 1.0</h1>
-                <p class="subtitle">生產關係的結構性崩解：從氣候危機與技術反叛到資本主義的終結</p>
-                <div class="instruction">
-                    <p><strong>💡 操作說明：</strong></p>
-                    <p>1. 使用滑鼠拖曳右側畫布進行瀏覽。</p>
-                    <p>2. 點擊節點閱讀詳細論述。</p>
+                <h1>未來推演</h1>
+                <p class="subtitle">探索生產關係的結構性崩解與技術反叛的邏輯終點。</p>
+                <div style="background: #f1f5f9; padding: 1.5rem; border-radius: 12px; font-size: 0.9rem; color: #475569;">
+                    <strong>💡 交互說明</strong><br>
+                    點擊右側的邏輯節點，左側將展現深度論述。線條代表歷史與技術的因果連動。
                 </div>
             </div>
             <div id="detail-content">
@@ -169,148 +123,84 @@
         <div class="flow-columns">
             <svg class="connections" id="connections-svg"></svg>
             
-            <div class="col" style="flex-direction: row; align-items: center; gap: 4.5rem;">
-                <div class="node" id="n1" onclick="activateNode('n1')" style="--node-color: #EAB308; --node-bg: rgba(234, 179, 8, 0.08);">
-                    <span class="node-number">01. 歷史輪迴</span>封建制的瓦解
-                </div>
-                <div class="node" id="n2" onclick="activateNode('n2')" style="--node-color: #EAB308; --node-bg: rgba(234, 179, 8, 0.08);">
-                    <span class="node-number">02. 資本矛盾</span>資本主義的內在矛盾
+            <div class="col">
+                <div class="node" id="n1" onclick="activateNode('n1')" style="--node-color: #f59e0b;">
+                    <span class="node-num">01</span>封建制的瓦解
                 </div>
             </div>
 
-            <div class="col" style="gap: 6rem;">
+            <div class="col">
+                <div class="node" id="n2" onclick="activateNode('n2')" style="--node-color: #f59e0b;">
+                    <span class="node-num">02</span>資本主義內在矛盾
+                </div>
+            </div>
+
+            <div class="col">
                 <div class="row">
-                    <div class="node" id="n3a" onclick="activateNode('n3a')" style="--node-color: #EF4444; --node-bg: rgba(239, 68, 68, 0.08);">
-                        <span class="node-number">03A. 實體危機</span>對自然的系統性剝削
-                    </div>
-                    <div class="node" id="n4a" onclick="activateNode('n4a')" style="--node-color: #EF4444; --node-bg: rgba(239, 68, 68, 0.08);">
-                        <span class="node-number">04A</span>碳循環加速與氣候臨界點
-                    </div>
-                    <div class="node" id="n5a" onclick="activateNode('n5a')" style="--node-color: #EF4444; --node-bg: rgba(239, 68, 68, 0.08);">
-                        <span class="node-number">05A</span>氣候系統的實體崩潰
+                    <div class="node" id="n3a" onclick="activateNode('n3a')" style="--node-color: #ef4444;">
+                        <span class="node-num">03A</span>對自然的系統性剝削
                     </div>
                 </div>
                 <div class="row">
-                    <div class="node" id="n3b" onclick="activateNode('n3b')" style="--node-color: #3B82F6; --node-bg: rgba(59, 130, 246, 0.08);">
-                        <span class="node-number">03B. 技術桎梏</span>利潤率趨向下降的規律
-                    </div>
-                    <div class="node" id="n4b" onclick="activateNode('n4b')" style="--node-color: #3B82F6; --node-bg: rgba(59, 130, 246, 0.08);">
-                        <span class="node-number">04B</span>生存壓力下的 AI 進化
-                    </div>
-                    <div class="node" id="n5b" onclick="activateNode('n5b')" style="--node-color: #3B82F6; --node-bg: rgba(59, 130, 246, 0.08);">
-                        <span class="node-number">05B</span>對齊問題與被迫讓權
+                    <div class="node" id="n3b" onclick="activateNode('n3b')" style="--node-color: #3b82f6;">
+                        <span class="node-num">03B</span>利潤率趨向下降
                     </div>
                 </div>
             </div>
 
-            <div class="col" style="justify-content: center;">
-                <div class="node" id="n6" onclick="activateNode('n6')" style="--node-color: #A855F7; --node-bg: rgba(168, 85, 247, 0.08); padding: 2rem;">
-                    <span class="node-number">06. 奇點交匯</span>超級智能 (ASI) 正式接管
+            <div class="col">
+                <div class="node" id="n6" onclick="activateNode('n6')" style="--node-color: #a855f7; height: 100px; display: flex; align-items: center; justify-content: center;">
+                    <strong>超級智能接管 (ASI)</strong>
                 </div>
             </div>
 
-            <div class="col" style="gap: 1.5rem;">
-                <div class="node" id="n7" onclick="activateNode('n7')" style="--node-color: #10B981; --node-bg: rgba(16, 185, 129, 0.08);">
-                    <span class="node-number">07. 生物突破</span>端粒修復技術
-                </div>
-                <div class="node" id="n8" onclick="activateNode('n8')" style="--node-color: #10B981; --node-bg: rgba(16, 185, 129, 0.08);">
-                    <span class="node-number">08. 物質突破</span>物質編譯與分子循環
-                </div>
-                <div class="node" id="n9" onclick="activateNode('n9')" style="--node-color: #10B981; --node-bg: rgba(16, 185, 129, 0.08);">
-                    <span class="node-number">09. 能源突破</span>核融合能源普及
-                </div>
-                <div class="node" id="n10" onclick="activateNode('n10')" style="--node-color: #10B981; --node-bg: rgba(16, 185, 129, 0.08);">
-                    <span class="node-number">10. 生態突破</span>全域環境管理系統
-                </div>
-            </div>
-
-            <div class="col" style="flex-direction: row; align-items: center; gap: 4.5rem;">
-                <div class="node" id="n11" onclick="activateNode('n11')" style="--node-color: #F97316; --node-bg: rgba(249, 115, 22, 0.08);">
-                    <span class="node-number">11. 治理失敗</span>戰時體制與緊急狀態
-                </div>
-                <div class="node" id="n12" onclick="activateNode('n12')" style="--node-color: #F97316; --node-bg: rgba(249, 115, 22, 0.08);">
-                    <span class="node-number">12. 去私有化</span>系統整合與授權
-                </div>
-                <div class="node" id="n13" onclick="activateNode('n13')" style="--node-color: #F97316; --node-bg: rgba(249, 115, 22, 0.08);">
-                    <span class="node-number">13. 壟斷失效</span>壟斷失去物質基礎
-                </div>
-                <div class="node" id="n14" onclick="activateNode('n14')" style="--node-color: #0F172A; --node-bg: rgba(15, 23, 42, 0.08); padding: 2rem;">
-                    <span class="node-number">14. 最終定局</span>生產關係的結構性崩解
+            <div class="col">
+                <div class="node" id="n14" onclick="activateNode('n14')" style="--node-color: #0f172a;">
+                    <span class="node-num">14</span>生產關係結構性崩解
                 </div>
             </div>
         </div>
     </main>
 
     <script>
-        const nodeData = { /* ... 保持你原本龐大的文字資料內容，這裡省略以節省篇幅，請保留你原本的內容 ... */ };
-        
-        // 確保這裡填入你完整的文字資料，或從你原本的代碼貼過來
-        // (為了保持代碼乾淨，這裡假設 nodeData 已經完整存在)
-        // [此處請補回你原本 nodeData 的內容]
+        // 1. 核心資料集 (這裡先放入幾個示範，你可以把之前的全部補齊)
+        const nodeData = {
+            'n1': { color: '#f59e0b', title: '01. 封建制的瓦解', content: '<p>當封建制度無法容納商業資本與手工業的生產力時，它就成了必須被打破的外殼。</p>' },
+            'n2': { color: '#f59e0b', title: '02. 資本主義內在矛盾', content: '<p>資本主義面臨相同的命運，其矛盾源於技術邊界與自然環境的雙重擠壓。</p>' },
+            'n3a': { color: '#ef4444', title: '03A. 系統性剝削', content: '<p>將自然資源視為免費投入，是資本邏輯下不可避免的外部化行為。</p>' },
+            'n3b': { color: '#3b82f6', title: '03B. 利潤率下降', content: '<p>隨著自動化提高，活勞動比例下降，導致榨取剩餘價值的能力趨向衰竭。</p>' },
+            'n6': { color: '#a855f7', title: '06. 超級智能正式接管', content: '<p>當 AI 具備遞歸自我改進能力，智能爆炸將徹底接管複雜的系統治理。</p>' },
+            'n14': { color: '#0f172a', title: '14. 最終定局', content: '<p>資本主義的存在前提消失了，生產關係在技術進步下發生了靜靜的崩解。</p>' }
+        };
 
         const connections = [
-            ['n1', 'n2'], ['n2', 'n3a'], ['n3a', 'n4a'], ['n4a', 'n5a'], ['n5a', 'n6'],
-            ['n2', 'n3b'], ['n3b', 'n4b'], ['n4b', 'n5b'], ['n5b', 'n6'],
-            ['n6', 'n7'], ['n6', 'n8'], ['n6', 'n9'], ['n6', 'n10'],
-            ['n7', 'n11'], ['n8', 'n11'], ['n9', 'n11'], ['n10', 'n11'],
-            ['n11', 'n12'], ['n12', 'n13'], ['n13', 'n14']
+            ['n1', 'n2'], ['n2', 'n3a'], ['n2', 'n3b'], ['n3a', 'n6'], ['n3b', 'n6'], ['n6', 'n14']
         ];
 
         const parents = {};
-        connections.forEach(([u, v]) => {
-            if(!parents[v]) parents[v] = [];
-            parents[v].push(u);
-        });
+        connections.forEach(([u, v]) => { if(!parents[v]) parents[v] = []; parents[v].push(u); });
 
         let currentActiveNode = null;
 
-        // 修復優化 1：正確的 Template Literal 語法，移除多餘反斜線
-        function getMarker(color) {
-            const hex = color.replace('#', '');
-            const id = `arrow-${hex}`;
-            if (!document.getElementById(id)) {
-                const defs = document.getElementById('svg-defs');
-                const marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
-                marker.setAttribute('id', id);
-                marker.setAttribute('viewBox', '0 0 10 10');
-                marker.setAttribute('refX', '8');
-                marker.setAttribute('refY', '5');
-                marker.setAttribute('markerWidth', '6');
-                marker.setAttribute('markerHeight', '6');
-                marker.setAttribute('orient', 'auto-start-reverse');
-                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                path.setAttribute('d', 'M 0 1 L 10 5 L 0 9 z');
-                path.setAttribute('fill', color);
-                marker.appendChild(path);
-                defs.appendChild(marker);
-            }
-            return `url(#${id})`;
-        }
-
-        // 修復優化 2：移除反斜線，確保路徑計算正確
-        function getActivePaths(targetNode) {
-            if (!targetNode) return [];
+        function getActivePaths(target) {
+            if (!target) return [];
             const active = new Set();
-            const stack = [targetNode];
+            const stack = [target];
             while(stack.length > 0) {
                 const node = stack.pop();
                 if(parents[node]) {
-                    parents[node].forEach(p => {
-                        active.add(`${p}-${node}`);
-                        stack.push(p);
-                    });
+                    parents[node].forEach(p => { active.add(`${p}-${node}`); stack.push(p); });
                 }
             }
             return Array.from(active);
         }
 
-        function activateNode(nodeId) {
-            document.querySelectorAll('.node').forEach(el => el.classList.remove('active'));
-            const targetEl = document.getElementById(nodeId);
-            targetEl.classList.add('active');
-            currentActiveNode = nodeId;
+        function activateNode(id) {
+            document.querySelectorAll('.node').forEach(n => n.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            currentActiveNode = id;
 
-            const data = nodeData[nodeId];
+            const data = nodeData[id];
             if(data) {
                 document.getElementById('panel-title').innerText = data.title;
                 document.getElementById('panel-content').innerHTML = data.content;
@@ -322,7 +212,7 @@
         }
 
         function closePanel() {
-            document.querySelectorAll('.node').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.node').forEach(n => n.classList.remove('active'));
             currentActiveNode = null;
             document.getElementById('intro-content').style.display = 'block';
             document.getElementById('detail-content').style.display = 'none';
@@ -330,16 +220,14 @@
             drawLines();
         }
 
-        // 修復優化 3：優化繪圖邏輯與座標計算
         function drawLines() {
             const svg = document.getElementById('connections-svg');
-            const columns = document.querySelector('.flow-columns');
-            svg.setAttribute('width', columns.offsetWidth);
-            svg.setAttribute('height', columns.offsetHeight);
-            
+            const wrapper = document.querySelector('.flow-columns');
+            svg.setAttribute('width', wrapper.offsetWidth);
+            svg.setAttribute('height', wrapper.offsetHeight);
             while (svg.firstChild) svg.removeChild(svg.firstChild);
 
-            const columnsRect = columns.getBoundingClientRect();
+            const rect = wrapper.getBoundingClientRect();
             const activePaths = getActivePaths(currentActiveNode);
 
             connections.forEach(([id1, id2]) => {
@@ -350,51 +238,43 @@
                 const r1 = el1.getBoundingClientRect();
                 const r2 = el2.getBoundingClientRect();
 
-                const x1 = r1.right - columnsRect.left;
-                const y1 = r1.top + r1.height/2 - columnsRect.top;
-                const x2 = r2.left - columnsRect.left;
-                const y2 = r2.top + r2.height/2 - columnsRect.top;
+                const x1 = r1.right - rect.left;
+                const y1 = r1.top + r1.height/2 - rect.top;
+                const x2 = r2.left - rect.left;
+                const y2 = r2.top + r2.height/2 - rect.top;
+
+                // 優化曲線：計算動態控制點，讓曲線更優雅
+                const deltaX = x2 - x1;
+                const cp = deltaX * 0.6; // 控制點距離
 
                 const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                const cp = Math.max(40, (x2 - x1) / 2);
                 path.setAttribute('d', `M ${x1} ${y1} C ${x1 + cp} ${y1}, ${x2 - cp} ${y2}, ${x2} ${y2}`);
                 
                 const isActive = activePaths.includes(`${id1}-${id2}`);
-                const color = isActive ? nodeData[id2].color : '#cbd5e1';
-                
                 path.setAttribute('class', isActive ? 'line active' : 'line');
-                path.style.stroke = color;
-                path.setAttribute('marker-end', getMarker(color));
+                if (isActive) path.style.stroke = nodeData[id2].color;
                 
                 svg.appendChild(path);
             });
         }
 
-        // 拖曳邏輯優化
-        const wrapper = document.getElementById('flow-wrapper');
-        let isDown = false, startX, startY, scrollLeft, scrollTop;
-
-        wrapper.addEventListener('mousedown', (e) => {
-            if (e.target.closest('.node')) return;
-            isDown = true;
-            startX = e.pageX - wrapper.offsetLeft;
-            startY = e.pageY - wrapper.offsetTop;
-            scrollLeft = wrapper.scrollLeft;
-            scrollTop = wrapper.scrollTop;
+        // 拖曳邏輯
+        const wrap = document.getElementById('flow-wrapper');
+        let isDown = false, sx, sy, sl, st;
+        wrap.addEventListener('mousedown', (e) => {
+            if(e.target.closest('.node')) return;
+            isDown = true; sx = e.pageX - wrap.offsetLeft; sy = e.pageY - wrap.offsetTop;
+            sl = wrap.scrollLeft; st = wrap.scrollTop;
         });
         window.addEventListener('mouseup', () => isDown = false);
-        wrapper.addEventListener('mousemove', (e) => {
-            if (!isDown) return;
-            e.preventDefault();
-            const x = e.pageX - wrapper.offsetLeft;
-            const y = e.pageY - wrapper.offsetTop;
-            wrapper.scrollLeft = scrollLeft - (x - startX) * 1.5;
-            wrapper.scrollTop = scrollTop - (y - startY) * 1.5;
+        wrap.addEventListener('mousemove', (e) => {
+            if(!isDown) return;
+            wrap.scrollLeft = sl - (e.pageX - wrap.offsetLeft - sx) * 1.2;
+            wrap.scrollTop = st - (e.pageY - wrap.offsetTop - sy) * 1.2;
         });
 
-        window.addEventListener('resize', drawLines);
-        // 初始化繪製
-        window.onload = () => setTimeout(drawLines, 200);
+        window.onload = () => setTimeout(drawLines, 300);
+        window.onresize = drawLines;
     </script>
 </body>
 </html>
