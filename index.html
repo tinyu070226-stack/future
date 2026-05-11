@@ -105,7 +105,7 @@
         <div class="sidebar-inner">
             <div id="intro-content">
                 <h1>未來推演</h1>
-                <p class="subtitle">探索生產關係的結構性崩解與技術反叛的邏輯終點。</p>
+                <p class="subtitle">探索生產關係的在生產力發展下的崩解。</p>
                 <div style="background: #f1f5f9; padding: 1.5rem; border-radius: 12px; font-size: 0.9rem; color: #475569;">
                     <strong>💡 交互說明</strong><br>
                     點擊右側的邏輯節點，左側將展現深度論述。線條代表歷史與技術的因果連動。
@@ -125,7 +125,7 @@
             
             <div class="col">
                 <div class="node" id="n1" onclick="activateNode('n1')" style="--node-color: #f59e0b;">
-                    <span class="node-num">01</span>封建制的瓦解
+                    <span class="node-num">01</span>生產關係改變前提
                 </div>
             </div>
 
@@ -138,12 +138,12 @@
             <div class="col">
                 <div class="row">
                     <div class="node" id="n3a" onclick="activateNode('n3a')" style="--node-color: #ef4444;">
-                        <span class="node-num">03A</span>對自然的系統性剝削
+                        <span class="node-num">03A</span>對自然的剝削
                     </div>
                 </div>
                 <div class="row">
                     <div class="node" id="n3b" onclick="activateNode('n3b')" style="--node-color: #3b82f6;">
-                        <span class="node-num">03B</span>利潤率趨向下降
+                        <span class="node-num">03B</span>對生產力發展的阻礙
                     </div>
                 </div>
             </div>
@@ -165,7 +165,8 @@
     <script>
         // 1. 核心資料集 (這裡先放入幾個示範，你可以把之前的全部補齊)
         const nodeData = {
-            'n1': { color: '#f59e0b', title: '01. 封建制的瓦解', content: '<p>當封建制度無法容納商業資本與手工業的生產力時，它就成了必須被打破的外殼。</p>' },
+            'n1': { color: '#f59e0b', title: '01. 封建制的瓦解', content: '<p>在更早的時代 封建制的所有關係之所以被資本主義取代 本質在於這種關係已經是在阻礙生產 而不是促進生產了 擺在資本主義面前的也不過是相同的命運。問題只在於資本主義的生產關係在什麼條件下從促進生產變成阻礙生產？我們認為答案已經在兩個同時展開的歷史過程中清晰地顯現——對自然的系統性剝削所引發的氣候崩潰，以及資本驅動的技術發展最終超越了資本所能控制的邊界。這兩個過程不是平行的獨立事件，而是同一個生產關係矛盾的兩個面向，在我們的時代同時爆發。
+</p>' },
             'n2': { color: '#f59e0b', title: '02. 資本主義內在矛盾', content: '<p>資本主義面臨相同的命運，其矛盾源於技術邊界與自然環境的雙重擠壓。</p>' },
             'n3a': { color: '#ef4444', title: '03A. 系統性剝削', content: '<p>將自然資源視為免費投入，是資本邏輯下不可避免的外部化行為。</p>' },
             'n3b': { color: '#3b82f6', title: '03B. 利潤率下降', content: '<p>隨著自動化提高，活勞動比例下降，導致榨取剩餘價值的能力趨向衰竭。</p>' },
