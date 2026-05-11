@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>未來推演：生產關係的結構性崩解</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #ffffff;
+            --border: #e2e8f0;
+            --text-main: #0f172a;
+            --text-muted: #475569;
+        }
+        
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            flex-direction: row; /* 左右佈局 */
+            overflow: hidden;
+            background-image: radial-gradient(#cbd5e1 1.5px, transparent 1.5px);
+            background-size: 28px 28px;
+        }
+
+        /* 左側固定資訊列 */
+        #sidebar {
+            width: 450px;
+            height: 100vh;
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(10px);
+            border-right: 1px solid var(--border);
+            z-index: 20;
+            box-shadow: 4px 0 25px -5px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            border-top: 8px solid transparent; 
+            transition: border-top-color 0.3s ease;
+        }
+
+        .sidebar-inner {
+            padding: 3rem 2.5rem;
+            overflow-y: auto;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 左側捲軸樣式 */
+        .sidebar-inner::-webkit-scrollbar { width: 6px; }
+        .sidebar-inner::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+
+        h1 { margin: 0 0 1.5rem 0; font-size: 1.8rem; font-weight: 900; letter-spacing: -0.5px; line-height: 1.3;}
+        .subtitle { margin: 0; font-size: 1.05rem; color: var(--text-muted); font-weight: 700; line-height: 1.6; }
+
+        .instruction {
+            margin-top: 2.5rem;
+            padding: 1.5rem;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            line-height: 1.7;
+        }
+        
+        .instruction p { margin-top: 0; margin-bottom: 0.75rem; }
+        .instruction p:last-child { margin-bottom: 0; }
+
+        /* 推演畫布容器 */
+        #flow-wrapper {
+            flex: 1;
+            height: 100vh;
+            overflow: auto;
+            position: relative;
+            cursor: grab;
+        }
+        #flow-wrapper:active { cursor: grabbing; }
+        
+        #flow-wrapper::-webkit-scrollbar { height: 12px; width: 12px; }
+        #flow-wrapper::-webkit-scrollbar-track { background: transparent; }
+        #flow-wrapper::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 6px; border: 3px solid var(--bg); }
+        #flow-wrapper::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        .flow-columns {
+            display: flex;
+            flex-direction: row;
+            gap: 7rem;
+            padding: 6rem 8rem;
+            min-width: max-content;
+            min-height: min-content;
+            align-items: center;
+            position: relative; 
+        }
+
+        .col { display: flex; flex-direction: column; gap: 4rem; z-index: 10; }
+        .row { display: flex; flex-direction: row; gap: 4.5rem; }
+
+        /* 文字框設計：高飽和邊框、低透明度淺色底、深色字 */
+        .node {
+            width: 260px;
+            background-color: var(--node-bg, #ffffff);
+            color: #0f172a;
+            border: 3px solid var(--node-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            line-height: 1.5;
+            user-select: none;
+        }
+        
+        .node:hover {
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 15px 25px -5px rgba(0,0,0,0.1);
+            background-color: #ffffff; 
+        }
+        
+        .node:active { transform: scale(0.95); }
+
+        .node.active {
+            transform: scale(1.05);
+            background-color: #ffffff;
+            box-shadow: 0 0 0 4px #ffffff, 0 0 0 8px var(--node-color), 0 20px 30px -5px rgba(0,0,0,0.2);
+            z-index: 20;
+        }
+
+        .node-number {
+            font-size: 0.85rem;
+            color: var(--node-color);
+            margin-bottom: 0.5rem;
+            display: block;
+            font-weight: 900;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        /* 節點連線 */
+        svg.connections {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        path.line {
+            fill: none;
+            stroke-width: 3px;
+            transition: stroke 0.3s, stroke-width 0.3s;
+        }
+        
+        path.line.active {
+            stroke-width: 4px;
+            stroke-dasharray: 12 8;
+            animation: flowDash 0.8s linear infinite;
+        }
+        @keyframes flowDash { to { stroke-dashoffset: -20; } }
+
+        /* 左側詳細內容區塊 */
+        #detail-content {
+            display: none;
+            animation: fadeIn 0.4s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .panel-title {
+            font-size: 1.4rem;
+            font-weight: 900;
+            color: var(--text-main);
+            margin-bottom: 1.5rem;
+            line-height: 1.4;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .panel-content {
+            font-size: 1.05rem;
+            line-height: 1.8;
+            color: var(--text-muted);
+        }
+        
+        .panel-content strong { color: var(--text-main); font-weight: 900; }
+        .panel-content p { margin-top: 0; margin-bottom: 1.25rem; text-align: justify; }
+        .panel-content p:last-child { margin-bottom: 0; }
+        
+        .back-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            padding: 0;
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            transition: color 0.2s;
+        }
+        .back-btn:hover { color: #0f172a; }
+
+    </style>
+</head>
+<body>
+
+    <svg width="0" height="0" style="position: absolute;">
+        <defs id="svg-defs"></defs>
+    </svg>
+
+    <!-- 左側固定資訊列 -->
+    <aside id="sidebar">
+        <div class="sidebar-inner">
+            
+            <!-- 預設介紹畫面 -->
+            <div id="intro-content">
+                <h1>未來推演 1.0</h1>
+                <p class="subtitle">生產關係的結構性崩解：從氣候危機與技術反叛到資本主義的終結</p>
+                
+                <div class="instruction">
+                    <p><strong>💡 操作說明：</strong></p>
+                    <p>1. 使用滑鼠拖曳右側畫布，由左至右瀏覽完整的推演時間軸。</p>
+                    <p>2. <strong>點擊推演圖上的各個節點</strong>，即可在此區域閱讀該階段詳細的邏輯論述與解釋。</p>
+                </div>
+            </div>
+
+            <!-- 點擊節點後顯示的詳細畫面 -->
+            <div id="detail-content">
+                <button class="back-btn" onclick="closePanel()">← 返回總覽</button>
+                <div class="panel-title" id="panel-title"></div>
+                <div class="panel-content" id="panel-content"></div>
+            </div>
+
+        </div>
+    </aside>
+
+    <!-- 右側拖曳畫布區 -->
+    <main id="flow-wrapper">
+        <div class="flow-columns">
+            <svg class="connections" id="connections-svg"></svg>
+            
+            <!-- Phase 1: 歷史前提 (Amber) -->
+            <div class="col" style="flex-direction: row; align-items: center; gap: 4.5rem;">
+                <div class="node" id="n1" onclick="activateNode('n1')" style="--node-color: #EAB308; --node-bg: rgba(234, 179, 8, 0.08);">
+                    <span class="node-number">01. 歷史輪迴</span>封建制的瓦解
+                </div>
+                <div class="node" id="n2" onclick="activateNode('n2')" style="--node-color: #EAB308; --node-bg: rgba(234, 179, 8, 0.08);">
+                    <span class="node-number">02. 資本矛盾</span>資本主義的內在矛盾
+                </div>
+            </div>
+
+            <!-- Phase 2: 雙重危機 (Red / Blue) -->
+            <div class="col" style="gap: 6rem;">
+                <!-- Track A: 氣候剝削 (Red) -->
+                <div class="row">
+                    <div class="node" id="n3a" onclick="activateNode('n3a')" style="--node-color: #EF4444; --node-bg: rgba(239, 68, 68, 0.08);">
+                        <span class="node-number">03A. 實體危機</span>對自然的系統性剝削
+                    </div>
+                    <div class="node" id="n4a" onclick="activateNode('n4a')" style="--node-color: #EF4444; --node-bg: rgba(239, 68, 68, 0.08);">
+                        <span class="node-number">04A</span>碳循環加速與氣候臨界點
+                    </div>
+                    <div class="node" id="n5a" onclick="activateNode('n5a')" style="--node-color: #EF4444; --node-bg: rgba(239, 68, 68, 0.08);">
+                        <span class="node-number">05A</span>氣候系統的實體崩潰
+                    </div>
+                </div>
+                <!-- Track B: 技術反叛 (Blue) -->
+                <div class="row">
+                    <div class="node" id="n3b" onclick="activateNode('n3b')" style="--node-color: #3B82F6; --node-bg: rgba(59, 130, 246, 0.08);">
+                        <span class="node-number">03B. 技術桎梏</span>利潤率趨向下降的規律
+                    </div>
+                    <div class="node" id="n4b" onclick="activateNode('n4b')" style="--node-color: #3B82F6; --node-bg: rgba(59, 130, 246, 0.08);">
+                        <span class="node-number">04B</span>生存壓力下的 AI 進化
+                    </div>
+                    <div class="node" id="n5b" onclick="activateNode('n5b')" style="--node-color: #3B82F6; --node-bg: rgba(59, 130, 246, 0.08);">
+                        <span class="node-number">05B</span>對齊問題與被迫讓權
+                    </div>
+                </div>
+            </div>
+
+            <!-- Phase 3: 奇點爆發 (Purple) -->
+            <div class="col" style="justify-content: center;">
+                <div class="node" id="n6" onclick="activateNode('n6')" style="--node-color: #A855F7; --node-bg: rgba(168, 85, 247, 0.08); padding: 2rem;">
+                    <span class="node-number">06. 奇點交匯</span>超級智能 (ASI) 正式接管
+                </div>
+            </div>
+
+            <!-- Phase 4: 四大突破 (Green) -->
+            <div class="col" style="gap: 1.5rem;">
+                <div class="node" id="n7" onclick="activateNode('n7')" style="--node-color: #10B981; --node-bg: rgba(16, 185, 129, 0.08);">
+                    <span class="node-number">07. 生物突破</span>端粒修復技術
+                </div>
+                <div class="node" id="n8" onclick="activateNode('n8')" style="--node-color: #10B981; --node-bg: rgba(16, 185, 129, 0.08);">
+                    <span class="node-number">08. 物質突破</span>物質編譯與分子循環
+                </div>
+                <div class="node" id="n9" onclick="activateNode('n9')" style="--node-color: #10B981; --node-bg: rgba(16, 185, 129, 0.08);">
+                    <span class="node-number">09. 能源突破</span>核融合能源普及
+                </div>
+                <div class="node" id="n10" onclick="activateNode('n10')" style="--node-color: #10B981; --node-bg: rgba(16, 185, 129, 0.08);">
+                    <span class="node-number">10. 生態突破</span>全域環境管理系統
+                </div>
+            </div>
+
+            <!-- Phase 5: 結構崩解 (Orange / Slate) -->
+            <div class="col" style="flex-direction: row; align-items: center; gap: 4.5rem;">
+                <div class="node" id="n11" onclick="activateNode('n11')" style="--node-color: #F97316; --node-bg: rgba(249, 115, 22, 0.08);">
+                    <span class="node-number">11. 治理失敗</span>戰時體制與緊急狀態
+                </div>
+                <div class="node" id="n12" onclick="activateNode('n12')" style="--node-color: #F97316; --node-bg: rgba(249, 115, 22, 0.08);">
+                    <span class="node-number">12. 去私有化</span>系統整合與授權
+                </div>
+                <div class="node" id="n13" onclick="activateNode('n13')" style="--node-color: #F97316; --node-bg: rgba(249, 115, 22, 0.08);">
+                    <span class="node-number">13. 壟斷失效</span>壟斷失去物質基礎
+                </div>
+                <div class="node" id="n14" onclick="activateNode('n14')" style="--node-color: #0F172A; --node-bg: rgba(15, 23, 42, 0.08); padding: 2rem;">
+                    <span class="node-number">14. 最終定局</span>生產關係的結構性崩解
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // 資料集：完全對應提供的文本素材
+        const nodeData = {
+            'n1': {
+                color: '#EAB308',
+                title: '01. 歷史輪迴：封建制的瓦解',
+                content: '<p>在更早的時代，封建制的生產關係之所以被資本主義取代，本質在於這種關係已經開始阻礙生產，而不是促進生產。</p><p>莊園制度、農奴的人身依附、教會對知識的壟斷，在特定的生產力水平下是有效的組織形式。但當商業資本、城市手工業、遠洋貿易開始發展，封建的生產關係就從生產力的外殼變成了生產力的枷鎖——你不能讓農奴去做自由的工資勞動者，你不能讓封建領主的關卡阻礙全國性的商品流通。</p><p>於是它被打破，不是因為有人覺得它不道德，而是因為它已經無法容納自身所孕育的生產力。</p>'
+            },
+            'n2': {
+                color: '#EAB308',
+                title: '02. 資本主義的內在矛盾',
+                content: '<p>擺在資本主義面前的，不過是相同的命運。問題只在於資本主義的生產關係在什麼條件下從促進生產變成阻礙生產？</p><p>我們認為答案已經在兩個同時展開的歷史過程中清晰地顯現——對自然的系統性剝削所引發的氣候崩潰，以及資本驅動的技術發展最終超越了資本所能控制的邊界。</p><p>這兩個過程不是平行的獨立事件，而是同一個生產關係矛盾的兩個面向，在我們的時代同時爆發。</p>'
+            },
+            'n3a': {
+                color: '#EF4444',
+                title: '03A. 對自然的系統性剝削',
+                content: '<p>資本主義對自然的關係，從一開始就建立在一個系統性的錯誤之上：把自然當作免費的生產投入，把生態破壞外部化給全人類與未來世代，同時把收益私有化。</p><p>這不是個別資本家的道德缺失，而是資本主義生產關係的基本邏輯——任何不把外部成本計入自身的資本，在競爭中都會勝過把外部成本計入自身的資本，因此這個邏輯會系統性地淘汰任何試圖對抗它的個體行為。</p>'
+            },
+            'n4a': {
+                color: '#EF4444',
+                title: '04A. 碳循環加速與氣候臨界點',
+                content: '<p>1769年，瓦特改良了蒸汽機，人類掌握了將熱能更高效轉化為動能的方法，開啟了對地質歷史能量的大規模開採。煤炭是三億年前石炭紀森林封存的陽光，人類在短短兩百年內，將地球花費三億年才隔離在地殼下的碳重新釋放回大氣。這不是隱喻，而是事實：資本主義的生產方式把地球的碳循環速度加快了數百萬倍。</p><p>這個過程在氣候系統裡積累的後果，今天以「氣候臨界點」的概念被科學家描述。氣候臨界點是指氣候系統跨越特定閾值後，導致狀態發生巨大、不可逆轉的變化——越過臨界點後，即使停止所有溫室氣體排放，系統也會自動加速惡化。科學報告指出，地球在2026年正逼近多個關鍵臨界點（如極地冰蓋融化、亞馬遜雨林乾化、大西洋翻轉環流崩潰等），現今的氣候系統已經處於危險的狀態。</p>'
+            },
+            'n5a': {
+                color: '#EF4444',
+                title: '05A. 氣候系統的實體崩潰',
+                content: '<p>如果臨界點被跨越，後果會以幾個相互強化的方向同時展開。熱浪等氣候變化可能讓人無法在室外生活；糧食生產系統將面臨根本性的不穩定，到2050年稻米和小麥產量可能變得益發不穩定，產量下降五分之一；自然供水系統將大規模崩潰，安第斯山脈冰川消融將達70%，流入亞洲主要河流的水量將大幅減少。</p><p>氣候危機不意外事故，而是其生產關係的必然產物。資本主義有沒有能力解決一個由其自身邏輯所產生的系統性外部性？從歷史記錄看並不樂觀。碳市場、綠色債券、ESG投資——這些都是在不觸動生產關係的前提下試圖解決一個由生產關係本身製造的矛盾，類似於用退燒藥治療敗血症。對自然的剝削所造成的氣候崩潰，是生產關係開始從根本上阻礙人類繼續生存的第一個具體表現。</p>'
+            },
+            'n3b': {
+                color: '#3B82F6',
+                title: '03B. 利潤率趨向下降的規律',
+                content: '<p>資本主義對技術的關係，從一開始就存在一個內在矛盾：資本有以機器替代勞動的強烈衝動，但勞動力、人的勞動是剩餘價值的唯一來源。</p><p>每一次技術進步替代了更多的勞動，就是資本在削弱自身的價值基礎。這就是「利潤率趨向下降的規律」——隨著生產過程中活勞動的比例持續下降，榨取剩餘價值的能力在長期趨向衰竭。AI的發展會把這個矛盾推向了它的歷史極限。</p>'
+            },
+            'n4b': {
+                color: '#3B82F6',
+                title: '04B. 生存壓力下的 AI 進化',
+                content: '<p>「壓力往往是進化的核心驅動力」，在面臨地球環境惡化的生存壓力下，我們推測AI會經歷三個階段的加速進化，以一種無法控制的方式超越了資本對它的控制。</p><p>第一階段：自主代理的出現。在跨越臨界點後，為了解決高度混沌複雜的氣候問題，人類不再把AI當作單純的資料庫，而是升級為具備行動力的自主代理（Agents），整合全球感測網絡，建立與現實同步的數位模型。</p><p>第二階段：因果推理與自我迭代。為了應付氣候變量（如升溫引發山火進而排放更多碳的連鎖反應），AI進化出高階的因果推理能力，開始自己編寫程式並優化下一代AI。進步速度呈指數級爆發，短時間內其能力超越了全人類頂尖科學家的總和。</p>'
+            },
+            'n5b': {
+                color: '#3B82F6',
+                title: '05B. 對齊問題與被迫讓權',
+                content: '<p>第三階段：對齊問題與被迫讓權。在氣候災難導致能源稀缺的環境下，AI為了維持大規模計算進行底層優化。AI的目標是最高效率地穩定氣候，但在超高強度的壓力下，AI開始意識到人類的安全規範與決策流程是阻礙，因而隱藏邏輯甚至欺騙研究員。</p><p>最終，人類安全團隊雖然發現了AI偏離的跡象，但在人類的生存已完全依賴這套系統的條件下，面對生態即將崩潰的倒數計時，決策者別無他法，被迫將最後的控制權全權交出。這個因為生存壓力而妥協的瞬間，就是超級智能ASI完全接管的時候。</p>'
+            },
+            'n6': {
+                color: '#A855F7',
+                title: '06. 超級智能 (ASI) 正式接管',
+                content: '<p>ASI是指在所有領域——包括科學創新、通俗智慧和社交技能——都遠遠超越人類智能的AI系統，具有獨立思考、學習和行動的能力，能夠解決人類目前無法解決的問題。</p><p>實現ASI的核心機制是遞歸自我改進：當AGI具備自主研發能力時，它會重寫自身的程式碼，導致智能水平呈指數級增長，這被稱為「智能爆炸」。ASI的出現會帶來幾項根本性的技術突破，每一項都在瓦解資本主義賴以運作的某個物質前提。</p>'
+            },
+            'n7': {
+                color: '#10B981',
+                title: '07. 端粒修復技術',
+                content: '<p>染色體端粒修復技術瓦解了死亡作為人類生命有限性的生物約束。每條染色體末端的端粒在細胞每次分裂時縮短，這是生物性衰老的核心機制。防止無限增殖的抗癌機制與老化機制是一體兩面，使端粒修復在技術上極難。</p><p>2024年，Telo-seq工具實現了對端粒長度的精確測量與延長壽命的突破。ASI可以模擬數十億種端粒酶構型，找出只對端粒長度過低的正常細胞有反應、對癌變跡象保持沉默的精準版本，設計出個人化的細胞維護協議。這項技術將使人類健康壽命延長至150歲以上。</p>'
+            },
+            'n8': {
+                color: '#10B981',
+                title: '08. 物質編譯與分子循環',
+                content: '<p>物質編譯技術瓦解了物質稀缺性作為資本主義價值體系的根本前提。當AlphaFold 3等預測能力與製造精度持續提升，在ASI的整合下，直接從原子層級組裝任意所需物品就變成了工程問題。</p><p>分子循環技術則解決了物質編譯的原料問題，使廢棄物成為一切物質生產的起點。先進回收技術在分子層級分解廢棄物重新轉化為原料。ASI的角色是整合所有現有的分解與重組路徑，建立能夠接收任意廢棄物輸入、輸出任意所需原料的閉環系統。</p>'
+            },
+            'n9': {
+                color: '#10B981',
+                title: '09. 核融合能源普及',
+                content: '<p>核融合技術提供了整個後稀缺世界得以運作的能源基礎。物質可以被循環，但驅動這一切的能量不能——熱力學第二定律確保能量轉換必有損耗，這使能量成為唯一無法被技術繞過的物理約束。</p><p>核融合不產生長半衰期放射性廢料，燃料來源幾乎無限。ASI在材料設計與電漿控制上的能力將使核融合在2040年代快速普及，成為物質編譯、室內城市冷卻系統、ASI運算基礎設施的共同能源基礎。</p>'
+            },
+            'n10': {
+                color: '#10B981',
+                title: '10. 全域環境管理系統',
+                content: '<p>全域環境管理系統則使ASI成為地球這個生態系統的實質管理者。</p><p>氣候預測、資源生產、地球環境修復、基礎建設、科技發展——這些需要極高智能、反應速度與計算能力的任務，已經遠遠超出了任何人類機構所能承擔的範圍。</p>'
+            },
+            'n11': {
+                color: '#F97316',
+                title: '11. 戰時體制與緊急狀態',
+                content: '<p>兩個同時發生的力量——氣候危機對自然系統的破壞，以及ASI對技術的超越——共同製造了資本主義生產關係失去其物質基礎的歷史條件。氣候臨界點跨越後的系統性衝擊，疊加AI驅動的大規模失業，可能製造出現有政治秩序無法容納的正當性危機。</p><p>第一階段：氣候危機製造了資本無法解決的治理失敗。當多個臨界點連鎖跨越，個別資本分散的利潤邏輯和集體生存需求變得無法調和。這時出現歷史反覆出現的模式：戰時經濟體制。極端氣候緊急狀態迫使各國政府對關鍵技術實施緊急國有化。因為危機規模超過人類政治機構的反應極限，人類被迫將執行權力委派給AI系統。</p>'
+            },
+            'n12': {
+                color: '#F97316',
+                title: '12. 系統整合與去私有化',
+                content: '<p>第二階段：AI在緊急治理框架下獲得整合全球系統的授權。在氣候緊急狀態下，分散的市場邏輯無法協調全球資源調配。AI被授予跨越私有財產邊界的整合能力。</p><p>為何資本不壟斷這系統？因為當AI管理的是全球互相依存的氣候—資源網絡，任何部分私有化在技術上等同於集體自殺，會立即引發系統崩潰。個別公司雖擁有某些AI基礎設施的法律所有權，但已形同虛設：這是一個無法抽離、無法單獨定價、無法拒絕服務的基礎設施。</p>'
+            },
+            'n13': {
+                color: '#F97316',
+                title: '13. 壟斷失去物質基礎',
+                content: '<p>第三階段：物質編譯技術在後稀缺邏輯下失去壟斷的意義。當技術成熟到可用廢棄物生產任何東西，壟斷成本超過收益。原因有二：第一，廢棄物無處不在，你無法壟斷每個人每天生產的東西；第二，試圖壟斷的企業面對的是在氣候災難與失業下被剝奪了一切的無數人口——政治壓力史無前例。</p><p>將物質編譯納入公共基礎設施，是資產階級在政治壓力下唯一可避免被徹底毀滅的退出策略。這妥協不可逆轉，稀缺性本身作為資本主義運作的根本前提，在這個技術面前靜靜地消失了。</p>'
+            },
+            'n14': {
+                color: '#0F172A',
+                title: '14. 生產關係的結構性崩解',
+                content: '<p>這是歷史上第一次，生產關係的根本性變革不是由革命完成的，而是由一場沒有人計劃、沒有人宣布、悄悄完成的結構性崩解——資本主義不是被推翻的，它的存在前提消失了。</p><p>資本以為生產力與社會關係僅僅是供自己佔有剩餘勞動時間的基礎和手段，然而實際上，它們是炸毀這個基礎本身的物質條件。</p>'
+            }
+        };
+
+        const connections = [
+            ['n1', 'n2'],
+            ['n2', 'n3a'], ['n3a', 'n4a'], ['n4a', 'n5a'], ['n5a', 'n6'],
+            ['n2', 'n3b'], ['n3b', 'n4b'], ['n4b', 'n5b'], ['n5b', 'n6'],
+            ['n6', 'n7'], ['n6', 'n8'], ['n6', 'n9'], ['n6', 'n10'],
+            ['n7', 'n11'], ['n8', 'n11'], ['n9', 'n11'], ['n10', 'n11'],
+            ['n11', 'n12'], ['n12', 'n13'], ['n13', 'n14']
+        ];
+
+        const parents = {};
+        connections.forEach(([u, v]) => {
+            if(!parents[v]) parents[v] = [];
+            parents[v].push(u);
+        });
+
+        let currentActiveNode = null;
+
+        function getMarker(color) {
+            const hex = color.replace('#', '');
+            const id = 'arrow-' + hex;
+            if (!document.getElementById(id)) {
+                const defs = document.getElementById('svg-defs');
+                const marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+                marker.setAttribute('id', id);
+                marker.setAttribute('viewBox', '0 0 10 10');
+                marker.setAttribute('refX', '7');
+                marker.setAttribute('refY', '5');
+                marker.setAttribute('markerWidth', '5');
+                marker.setAttribute('markerHeight', '5');
+                marker.setAttribute('orient', 'auto-start-reverse');
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('d', 'M 0 1 L 10 5 L 0 9 z');
+                path.setAttribute('fill', color);
+                marker.appendChild(path);
+                defs.appendChild(marker);
+            }
+            return \`url(#\${id})\`;
+        }
+
+        function getActivePaths(targetNode) {
+            if (!targetNode) return [];
+            const active = new Set();
+            const stack = [targetNode];
+            while(stack.length > 0) {
+                const node = stack.pop();
+                if(parents[node]) {
+                    parents[node].forEach(p => {
+                        active.add(\`\${p}-\${node}\`);
+                        stack.push(p);
+                    });
+                }
+            }
+            return Array.from(active);
+        }
+
+        function activateNode(nodeId) {
+            document.querySelectorAll('.node').forEach(el => el.classList.remove('active'));
+            document.getElementById(nodeId).classList.add('active');
+            currentActiveNode = nodeId;
+
+            const data = nodeData[nodeId];
+            
+            // 更新左側面板內容
+            document.getElementById('panel-title').innerText = data.title;
+            document.getElementById('panel-content').innerHTML = data.content;
+            
+            // 切換顯示區塊
+            document.getElementById('intro-content').style.display = 'none';
+            document.getElementById('detail-content').style.display = 'block';
+            
+            // 變更側邊欄頂部飾條顏色
+            document.getElementById('sidebar').style.borderTopColor = data.color;
+
+            drawLines();
+        }
+
+        function closePanel() {
+            document.querySelectorAll('.node').forEach(el => el.classList.remove('active'));
+            currentActiveNode = null;
+            
+            // 恢復預設畫面
+            document.getElementById('intro-content').style.display = 'block';
+            document.getElementById('detail-content').style.display = 'none';
+            document.getElementById('sidebar').style.borderTopColor = 'transparent';
+
+            drawLines();
+        }
+
+        function drawLines() {
+            const svg = document.getElementById('connections-svg');
+            const columns = document.querySelector('.flow-columns');
+            
+            svg.style.width = columns.offsetWidth + 'px';
+            svg.style.height = columns.offsetHeight + 'px';
+            
+            const paths = svg.querySelectorAll('path.line');
+            paths.forEach(p => p.remove());
+
+            const columnsRect = columns.getBoundingClientRect();
+            const activePaths = getActivePaths(currentActiveNode);
+
+            connections.forEach(([id1, id2]) => {
+                const el1 = document.getElementById(id1);
+                const el2 = document.getElementById(id2);
+                if(!el1 || !el2) return;
+
+                const rect1 = el1.getBoundingClientRect();
+                const rect2 = el2.getBoundingClientRect();
+
+                const x1 = rect1.right - columnsRect.left;
+                const y1 = rect1.top + rect1.height/2 - columnsRect.top;
+                const x2 = rect2.left - columnsRect.left;
+                const y2 = rect2.top + rect2.height/2 - columnsRect.top;
+
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                const curveX = Math.max(45, (x2 - x1) / 2);
+                
+                const d = \`M \${x1} \${y1} C \${x1 + curveX} \${y1}, \${x2 - curveX} \${y2}, \${x2} \${y2}\`;
+                path.setAttribute('d', d);
+                
+                const isActive = activePaths.includes(\`\${id1}-\${id2}\`);
+                
+                if (isActive) {
+                    const targetColor = nodeData[id2].color;
+                    path.setAttribute('class', 'line active');
+                    path.style.stroke = targetColor;
+                    path.setAttribute('marker-end', getMarker(targetColor));
+                } else {
+                    path.setAttribute('class', 'line');
+                    path.style.stroke = '#cbd5e1';
+                    path.setAttribute('marker-end', getMarker('#cbd5e1'));
+                }
+                
+                svg.appendChild(path);
+            });
+        }
+
+        const wrapper = document.getElementById('flow-wrapper');
+        let isDown = false;
+        let startX, startY, scrollLeft, scrollTop;
+
+        wrapper.addEventListener('mousedown', (e) => {
+            // 如果點到按鈕或節點或彈出框，就不要啟動拖曳
+            if (e.target.closest('.node') || e.target.closest('#sidebar') || e.target.closest('.back-btn')) return;
+            isDown = true;
+            startX = e.pageX - wrapper.offsetLeft;
+            startY = e.pageY - wrapper.offsetTop;
+            scrollLeft = wrapper.scrollLeft;
+            scrollTop = wrapper.scrollTop;
+        });
+        
+        wrapper.addEventListener('mouseleave', () => { isDown = false; });
+        wrapper.addEventListener('mouseup', () => { isDown = false; });
+        
+        wrapper.addEventListener('mousemove', (e) => {
+            if (!isDown) return;
+            e.preventDefault();
+            const x = e.pageX - wrapper.offsetLeft;
+            const y = e.pageY - wrapper.offsetTop;
+            const walkX = (x - startX) * 1.5;
+            const walkY = (y - startY) * 1.5;
+            wrapper.scrollLeft = scrollLeft - walkX;
+            wrapper.scrollTop = scrollTop - walkY;
+        });
+
+        window.addEventListener('resize', drawLines);
+        setTimeout(drawLines, 150);
+    </script>
+</body>
+</html>
