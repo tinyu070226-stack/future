@@ -47,53 +47,65 @@
 
         #flow-wrapper { flex: 1; height: 100vh; overflow: auto; cursor: grab; position: relative; }
         
-        /* 💡 新增：時間軸進度條樣式 */
-        #timeline-bar {
+        /* 💡 新版時間軸設計：極簡粗箭頭與互動圓點 */
+        #timeline-container {
             position: fixed;
-            top: 2.5rem;
-            left: calc(440px + 3rem); /* 側邊欄寬度 + 留白 */
-            right: 3rem;
-            height: 48px;
-            display: flex;
-            z-index: 100;
-            filter: drop-shadow(0 8px 12px rgba(0,0,0,0.08)); /* 為整個不規則圖形加上陰影 */
-        }
-
-        .timeline-step {
-            flex: 1;
+            top: 4rem;
+            left: calc(440px + 8rem);
+            right: 8rem;
+            height: 32px;
             display: flex;
             align-items: center;
-            justify-content: center;
-            color: #ffffff;
-            font-weight: 900;
-            font-size: 0.95rem;
-            letter-spacing: 2px;
-            position: relative;
-            margin-left: -20px; /* 讓箭頭互相重疊密合 */
-            clip-path: polygon(calc(100% - 20px) 0, 100% 50%, calc(100% - 20px) 100%, 0 100%, 20px 50%, 0 0);
-            text-shadow: 0 1px 2px rgba(0,0,0,0.2);
-            transition: opacity 0.3s ease;
+            z-index: 100;
         }
 
-        .timeline-step:first-child {
-            margin-left: 0;
-            clip-path: polygon(calc(100% - 20px) 0, 100% 50%, calc(100% - 20px) 100%, 0 100%, 0 0);
-            padding-left: 10px;
+        .timeline-line {
+            flex: 1;
+            height: 10px;
+            background-color: #e2e8f0; /* 純色塊 */
+            border-radius: 5px 0 0 5px;
         }
 
-        .timeline-step:last-child {
-            clip-path: polygon(100% 0, 100% 100%, 0 100%, 20px 50%, 0 0);
-            padding-right: 10px;
+        .timeline-arrow {
+            width: 0;
+            height: 0;
+            border-top: 16px solid transparent;
+            border-bottom: 16px solid transparent;
+            border-left: 22px solid #e2e8f0; /* 純色箭頭 */
+            margin-left: -2px;
         }
 
-        /* 漸層色塊設計 (與節點顏色互相呼應) */
-        .step-1 { background: linear-gradient(90deg, #f59e0b, #ef4444); }
-        .step-2 { background: linear-gradient(90deg, #ef4444, #8b5cf6); }
-        .step-3 { background: linear-gradient(90deg, #8b5cf6, #10b981); }
-        .step-4 { background: linear-gradient(90deg, #10b981, #0f172a); }
+        .timeline-dots {
+            position: absolute;
+            top: 0; left: 5%; right: calc(5% + 22px); bottom: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .dot {
+            width: 14px;
+            height: 14px;
+            background-color: #cbd5e1; /* 默認：較淡、較小 */
+            border-radius: 50%;
+            box-shadow: 0 0 0 6px var(--bg); /* 切斷線條的視覺鏤空感 */
+            transition: background-color 0.3s ease;
+        }
+
+        .dot.active {
+            background-color: var(--active-color); /* 讀取節點的主題色 */
+            box-shadow: 0 0 0 4px var(--bg), 0 4px 10px rgba(0,0,0,0.15);
+            animation: dotBounce 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
+        /* 圓點彈跳放大動畫 */
+        @keyframes dotBounce {
+            0% { transform: scale(1); }
+            50% { transform: scale(2.2); }
+            100% { transform: scale(1.6); } /* 最終停留在較大的狀態 */
+        }
 
         .flow-columns { display: flex; gap: 10rem; padding: 12rem 10rem 10rem 10rem; min-width: max-content; position: relative; align-items: center; }
-
         .col { display: flex; flex-direction: column; gap: 6rem; justify-content: center; }
         .sub-chain { display: flex; flex-direction: column; gap: 3rem; align-items: center; }
 
@@ -136,12 +148,16 @@
 
     <main id="flow-wrapper">
 
-        <!-- 💡 新增：時間軸進度條 HTML 結構 -->
-        <div id="timeline-bar">
-            <div class="timeline-step step-1">階段一：歷史前提</div>
-            <div class="timeline-step step-2">階段二：矛盾與極限</div>
-            <div class="timeline-step step-3">階段三：治理與授權</div>
-            <div class="timeline-step step-4">階段四：結構性崩解</div>
+        <!-- 極簡進度條容器 -->
+        <div id="timeline-container">
+            <div class="timeline-line"></div>
+            <div class="timeline-arrow"></div>
+            <div class="timeline-dots">
+                <div class="dot" id="dot-1"></div>
+                <div class="dot" id="dot-2"></div>
+                <div class="dot" id="dot-3"></div>
+                <div class="dot" id="dot-4"></div>
+            </div>
         </div>
 
         <div class="flow-columns">
@@ -242,6 +258,7 @@
         }
 
         function activateNode(id) {
+            // 處理節點選取與側邊欄顯示
             document.querySelectorAll('.node').forEach(n => n.classList.remove('active'));
             document.getElementById(id).classList.add('active');
             const data = nodeData[id];
@@ -255,6 +272,23 @@
                 document.getElementById('detail-content').style.display = 'block';
             }
             drawLines(id);
+
+            // 💡 處理時間軸圓點互動
+            let stage = 0;
+            if (['n1'].includes(id)) stage = 1;
+            else if (['n3a', 'n3b', 'n4b', 'n5b'].includes(id)) stage = 2;
+            else if (['n14'].includes(id)) stage = 3;
+            else if (['n15', 'n16', 'n17'].includes(id)) stage = 4;
+
+            document.querySelectorAll('.dot').forEach(d => d.classList.remove('active'));
+            if (stage > 0) {
+                const dot = document.getElementById('dot-' + stage);
+                // 直接將當前點擊節點的顏色賦予圓點
+                dot.style.setProperty('--active-color', data.color);
+                // 為了確保重複點擊同階段的節點時，依然會重新播放彈跳動畫
+                void dot.offsetWidth; 
+                dot.classList.add('active');
+            }
         }
 
         function closePanel() {
@@ -262,6 +296,9 @@
             document.getElementById('intro-content').style.display = 'block';
             document.getElementById('detail-content').style.display = 'none';
             document.getElementById('sidebar').style.borderTopColor = 'transparent';
+            
+            // 💡 清空時間軸圓點狀態
+            document.querySelectorAll('.dot').forEach(d => d.classList.remove('active'));
             drawLines(null);
         }
 
