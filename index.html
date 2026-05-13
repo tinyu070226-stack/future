@@ -43,11 +43,12 @@
         .panel-content hr { border: none; border-top: 1px solid #e2e8f0; margin: 2rem 0; }
         .panel-content strong { color: var(--text-main); font-weight: 900; }
 
-        .back-btn { background: #f1f5f9; border: none; padding: 10px 18px; border-radius: 8px; color: var(--text-muted); cursor: pointer; font-weight: 700; margin-bottom: 2rem; }
+        .back-btn { background: #f1f5f9; border: none; padding: 10px 18px; border-radius: 8px; color: var(--text-muted); cursor: pointer; font-weight: 700; margin-bottom: 2rem; transition: background 0.2s; }
+        .back-btn:hover { background: #e2e8f0; }
 
         #flow-wrapper { flex: 1; height: 100vh; overflow: auto; cursor: grab; position: relative; }
         
-        /* 💡 新版時間軸設計：極簡粗箭頭與互動圓點 */
+        /* 💡 時間軸進度條：純色塊、動態線條填充 */
         #timeline-container {
             position: fixed;
             top: 4rem;
@@ -57,13 +58,29 @@
             display: flex;
             align-items: center;
             z-index: 100;
+            /* 儲存 JS 算出的進度比例與色彩 */
+            --progress-width: 0%;
+            --progress-color: transparent;
         }
 
         .timeline-line {
+            position: relative;
             flex: 1;
             height: 10px;
-            background-color: #e2e8f0; /* 純色塊 */
+            background-color: #e2e8f0; 
             border-radius: 5px 0 0 5px;
+            overflow: hidden; /* 確保內部填充不會超出圓角 */
+        }
+
+        /* 💡 圓點左側的進度填充線條 */
+        .timeline-line::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; bottom: 0;
+            width: var(--progress-width);
+            background-color: var(--progress-color);
+            opacity: 0.35; /* 透過透明度自動形成較淡的同色系 */
+            transition: width 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.4s ease;
         }
 
         .timeline-arrow {
@@ -71,8 +88,8 @@
             height: 0;
             border-top: 16px solid transparent;
             border-bottom: 16px solid transparent;
-            border-left: 22px solid #e2e8f0; /* 純色箭頭 */
-            margin-left: -2px;
+            border-left: 22px solid #e2e8f0;
+            margin-left: -2px; /* 消除接縫 */
         }
 
         .timeline-dots {
@@ -81,28 +98,31 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            pointer-events: none; /* 避免干擾下方畫布的拖曳 */
         }
 
         .dot {
             width: 14px;
             height: 14px;
-            background-color: #cbd5e1; /* 默認：較淡、較小 */
+            background-color: #cbd5e1; /* 默認較淡、較小 */
             border-radius: 50%;
-            box-shadow: 0 0 0 6px var(--bg); /* 切斷線條的視覺鏤空感 */
+            box-shadow: 0 0 0 6px var(--bg); /* 切斷線條，產生視覺鏤空感 */
             transition: background-color 0.3s ease;
+            position: relative;
+            z-index: 2;
         }
 
+        /* 點選後的彈跳互動與變色 */
         .dot.active {
-            background-color: var(--active-color); /* 讀取節點的主題色 */
+            background-color: var(--active-color);
             box-shadow: 0 0 0 4px var(--bg), 0 4px 10px rgba(0,0,0,0.15);
             animation: dotBounce 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
         }
 
-        /* 圓點彈跳放大動畫 */
         @keyframes dotBounce {
             0% { transform: scale(1); }
             50% { transform: scale(2.2); }
-            100% { transform: scale(1.6); } /* 最終停留在較大的狀態 */
+            100% { transform: scale(1.6); } /* 最終固定為放大狀態 */
         }
 
         .flow-columns { display: flex; gap: 10rem; padding: 12rem 10rem 10rem 10rem; min-width: max-content; position: relative; align-items: center; }
@@ -219,7 +239,7 @@
             'n5b': { color: '#a855f7', title: 'ASI帶來的技術突破', content: '<p><strong>染色體端粒修復技術：</strong>使人類健康壽命延長至150歲以上。<br><strong>物質編譯技術：</strong>解決了基本生活資料的稀缺性問題。<br><strong>分子循環技術：</strong>解決了物質編譯的原料問題。<br><strong>核融合技術：</strong>提供了整個後稀缺世界得以運作的能源基礎。<br><strong>全域環境管理系統：</strong>使ASI成為地球生態系統的實質管理者。負責氣候預測、資源生產、地球環境修復、基礎建設等任務。</p>' },
             'n14': { 
                 color: '#0f172a', title: '資本主義生產關係的崩解', 
-                content: '<p>兩個同時發生的力量——氣候危機對自然系統的破壞，以及ASI對技術的超越——共同製造了資本主義生產關係失去其物質基礎的歷史條件。但這個崩解不是一個宣布的時刻，而是一個有其內在邏輯的過程。</p><p>氣候臨界點的跨越不會平等地衝擊所有人，AI的發展也不會平等地賦能所有人。擁有AI能力與足夠資本的上層群體，可以在相當程度上將自身與環境崩潰隔離；而既面對氣候衝擊又面對AI驅動的去工作化、同時缺乏任何適應資源的下層群體，承受的是雙重的結構性壓迫。這在政治上製造了一種危險的結構：統治階級對解決氣候問題的物質誘進急劇下降，因為他們越來越有能力從崩潰中隔離自己。</p><hr><p>從歷史唯物論的角度，嚴重的物質危機往往是生產關係發生根本性轉變的條件——黑死病加速了西歐封建制度的瓦解，兩次世界大戰重組了全球資本主義的形態，大蕭條催生了凱因斯主義的福利國家妥協。氣候臨界點跨越後的系統性衝擊，疊加AI驅動的大規模失業，可能製造出一個現有政治秩序無法容納的正當性危機。</p>' 
+                content: '<p>兩個同時發生的力量——氣候危機對自然系統的破壞，以及ASI對技術的超越——共同製造了資本主義生產關係失去其物質基礎的歷史條件。但這個崩解不是一個宣布的時刻，而是一個有其內在邏輯的過程。</p><p>氣候臨界點的跨越不會平等地衝擊所有人，AI的發展也不會平等地賦能所有人。擁有AI能力與足夠資本的上層群體，可以在相當程度上將自身與環境崩潰隔離；而既面對氣候衝擊又面對AI驅動的去工作化、同時缺乏任何適應資源的下層群體，承受的是雙重的結構性壓迫。這在政治上製造了一種危險的結構：統治階級對解決氣候問題的物質誘因急劇下降，因為他們越來越有能力從崩潰中隔離自己。</p><hr><p>從歷史唯物論的角度，嚴重的物質危機往往是生產關係發生根本性轉變的條件——黑死病加速了西歐封建制度的瓦解，兩次世界大戰重組了全球資本主義的形態，大蕭條催生了凱因斯主義的福利國家妥協。氣候臨界點跨越後的系統性衝擊，疊加AI驅動的大規模失業，可能製造出一個現有政治秩序無法容納的正當性危機。</p>' 
             },
             'n15': {
                 color: '#6366f1', title: '氣候危機製造了治理失敗',
@@ -273,7 +293,7 @@
             }
             drawLines(id);
 
-            // 💡 處理時間軸圓點互動
+            // 💡 處理時間軸圓點互動與左側線條進度
             let stage = 0;
             if (['n1'].includes(id)) stage = 1;
             else if (['n3a', 'n3b', 'n4b', 'n5b'].includes(id)) stage = 2;
@@ -281,13 +301,22 @@
             else if (['n15', 'n16', 'n17'].includes(id)) stage = 4;
 
             document.querySelectorAll('.dot').forEach(d => d.classList.remove('active'));
+            const container = document.getElementById('timeline-container');
+
             if (stage > 0) {
                 const dot = document.getElementById('dot-' + stage);
-                // 直接將當前點擊節點的顏色賦予圓點
                 dot.style.setProperty('--active-color', data.color);
-                // 為了確保重複點擊同階段的節點時，依然會重新播放彈跳動畫
-                void dot.offsetWidth; 
+                void dot.offsetWidth; // 強制重繪以重新播放動畫
                 dot.classList.add('active');
+
+                // 精準計算圓點中心點，讓填充線條平滑過去
+                const tLine = document.querySelector('.timeline-line');
+                const tDots = document.querySelector('.timeline-dots');
+                const offset = tDots.offsetLeft + dot.offsetLeft + (dot.offsetWidth / 2);
+                const percentage = (offset / tLine.offsetWidth) * 100;
+                
+                container.style.setProperty('--progress-width', percentage + '%');
+                container.style.setProperty('--progress-color', data.color);
             }
         }
 
@@ -297,8 +326,11 @@
             document.getElementById('detail-content').style.display = 'none';
             document.getElementById('sidebar').style.borderTopColor = 'transparent';
             
-            // 💡 清空時間軸圓點狀態
+            // 清空時間軸狀態，進度條退回起點
             document.querySelectorAll('.dot').forEach(d => d.classList.remove('active'));
+            const container = document.getElementById('timeline-container');
+            container.style.setProperty('--progress-width', '0%');
+            
             drawLines(null);
         }
 
