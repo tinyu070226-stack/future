@@ -46,7 +46,53 @@
         .back-btn { background: #f1f5f9; border: none; padding: 10px 18px; border-radius: 8px; color: var(--text-muted); cursor: pointer; font-weight: 700; margin-bottom: 2rem; }
 
         #flow-wrapper { flex: 1; height: 100vh; overflow: auto; cursor: grab; position: relative; }
-        .flow-columns { display: flex; gap: 10rem; padding: 10rem; min-width: max-content; position: relative; align-items: center; }
+        
+        /* 💡 新增：時間軸進度條樣式 */
+        #timeline-bar {
+            position: fixed;
+            top: 2.5rem;
+            left: calc(440px + 3rem); /* 側邊欄寬度 + 留白 */
+            right: 3rem;
+            height: 48px;
+            display: flex;
+            z-index: 100;
+            filter: drop-shadow(0 8px 12px rgba(0,0,0,0.08)); /* 為整個不規則圖形加上陰影 */
+        }
+
+        .timeline-step {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            font-weight: 900;
+            font-size: 0.95rem;
+            letter-spacing: 2px;
+            position: relative;
+            margin-left: -20px; /* 讓箭頭互相重疊密合 */
+            clip-path: polygon(calc(100% - 20px) 0, 100% 50%, calc(100% - 20px) 100%, 0 100%, 20px 50%, 0 0);
+            text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+            transition: opacity 0.3s ease;
+        }
+
+        .timeline-step:first-child {
+            margin-left: 0;
+            clip-path: polygon(calc(100% - 20px) 0, 100% 50%, calc(100% - 20px) 100%, 0 100%, 0 0);
+            padding-left: 10px;
+        }
+
+        .timeline-step:last-child {
+            clip-path: polygon(100% 0, 100% 100%, 0 100%, 20px 50%, 0 0);
+            padding-right: 10px;
+        }
+
+        /* 漸層色塊設計 (與節點顏色互相呼應) */
+        .step-1 { background: linear-gradient(90deg, #f59e0b, #ef4444); }
+        .step-2 { background: linear-gradient(90deg, #ef4444, #8b5cf6); }
+        .step-3 { background: linear-gradient(90deg, #8b5cf6, #10b981); }
+        .step-4 { background: linear-gradient(90deg, #10b981, #0f172a); }
+
+        .flow-columns { display: flex; gap: 10rem; padding: 12rem 10rem 10rem 10rem; min-width: max-content; position: relative; align-items: center; }
 
         .col { display: flex; flex-direction: column; gap: 6rem; justify-content: center; }
         .sub-chain { display: flex; flex-direction: column; gap: 3rem; align-items: center; }
@@ -89,6 +135,15 @@
     </aside>
 
     <main id="flow-wrapper">
+
+        <!-- 💡 新增：時間軸進度條 HTML 結構 -->
+        <div id="timeline-bar">
+            <div class="timeline-step step-1">階段一：歷史前提</div>
+            <div class="timeline-step step-2">階段二：矛盾與極限</div>
+            <div class="timeline-step step-3">階段三：治理與授權</div>
+            <div class="timeline-step step-4">階段四：結構性崩解</div>
+        </div>
+
         <div class="flow-columns">
             <svg class="connections" id="connections-svg"></svg>
             
